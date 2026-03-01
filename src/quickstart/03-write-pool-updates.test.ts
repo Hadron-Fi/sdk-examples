@@ -114,13 +114,13 @@ describe("Write pool updates", () => {
 
     // ------------------------------------------------------------------
     // 2. updateBaseSpread — set a 10 bps base spread
-    //    Base spread is a Q32 value applied symmetrically.
-    //    0.001 = 10 bps → bid at mid*(1-0.001), ask at mid*(1+0.001)
+    //    baseSpreadQ32 is a discount factor: 1.0 = no spread.
+    //    10 bps = toQ32(1 - 10/10000) = toQ32(0.999)
     // ------------------------------------------------------------------
     logHeader("updateBaseSpread");
     sig = await h.sendIx(
       pool.updateBaseSpread(authority.publicKey, {
-        baseSpreadQ32: toQ32(0.001),
+        baseSpreadQ32: toQ32(0.999),
       }),
       [authority]
     );
@@ -134,7 +134,7 @@ describe("Write pool updates", () => {
     sig = await h.sendIx(
       pool.updateMidpriceAndBaseSpread(authority.publicKey, {
         midpriceQ32: toQ32(158.0),
-        baseSpreadQ32: toQ32(0.0005),
+        baseSpreadQ32: toQ32(0.9995),
       }),
       [authority]
     );
