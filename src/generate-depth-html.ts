@@ -66,16 +66,16 @@ export const DEFAULT_CONFIG: PoolConfig = {
     ask: {
       points: [
         { volume: 0, priceFactor: 1.0 },
-        { volume: 15000, priceFactor: 1.00067 },
-        { volume: 37500, priceFactor: 1.00133 },
-        { volume: 75000, priceFactor: 1.00206 },
-        { volume: 112500, priceFactor: 1.00756 },  // +50 bps kink
-        { volume: 150000, priceFactor: 1.00794 },
-        { volume: 225000, priceFactor: 1.00851 },
-        { volume: 300000, priceFactor: 1.00894 },
-        { volume: 375000, priceFactor: 1.00928 },
-        { volume: 450000, priceFactor: 1.00955 },
-        { volume: 600000, priceFactor: 1.01 },
+        { volume: 15000, priceFactor: 0.99933 },
+        { volume: 37500, priceFactor: 0.99867 },
+        { volume: 75000, priceFactor: 0.99794 },
+        { volume: 112500, priceFactor: 0.99244 },  // +50 bps kink
+        { volume: 150000, priceFactor: 0.99206 },
+        { volume: 225000, priceFactor: 0.99149 },
+        { volume: 300000, priceFactor: 0.99106 },
+        { volume: 375000, priceFactor: 0.99073 },
+        { volume: 450000, priceFactor: 0.99045 },
+        { volume: 600000, priceFactor: 0.99 },
       ],
     },
   },
@@ -229,9 +229,16 @@ export function generateDepthHtml(
 
     function update(idx) {
       const f = frames[idx];
+      // Ask fill: extend curve to right edge of chart, then back along x-axis to close polygon
+      const askX = f.ask.map(p=>p.price);
+      const askY = f.ask.map(p=>p.cumVolume);
+      const rightEdge = priceRange[1];
+      const askFillX = [...askX, rightEdge, rightEdge, askX[0] || rightEdge];
+      const askFillY = [...askY, askY[askY.length-1] || 0, 0, 0];
       const depthTraces = [
         { x: f.bid.map(p=>p.price), y: f.bid.map(p=>p.cumVolume), mode: 'lines', name: 'Bid', line: { color: '#22c55e', width: 3 }, fill: 'tozerox', fillcolor: '#22c55e22' },
-        { x: f.ask.map(p=>p.price), y: f.ask.map(p=>p.cumVolume), mode: 'lines', name: 'Ask', line: { color: '#f97316', width: 3 }, fill: 'tozerox', fillcolor: '#f9731622' }
+        { x: askFillX, y: askFillY, mode: 'none', name: 'Ask', fill: 'toself', fillcolor: '#f9731622', showlegend: false, hoverinfo: 'skip' },
+        { x: askX, y: askY, mode: 'lines', name: 'Ask', line: { color: '#f97316', width: 3 } }
       ];
       Plotly.react('chart', depthTraces, depthLayout(idx), { responsive: true, displayModeBar: false });
       Plotly.react('riskChart', riskTraces, riskLayout(f.pctBase*100), { responsive: true, displayModeBar: false });

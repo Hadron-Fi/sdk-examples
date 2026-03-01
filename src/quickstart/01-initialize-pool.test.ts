@@ -72,9 +72,10 @@ describe("Initialize pool with price and risk curves", () => {
     // 3. Set price curves (bid + ask)
     //
     //    Controls the effective price as a function of trade size.
-    //    priceFactor is a multiplier on the midprice:
-    //      Bid: < 1.0 = worse price for seller (amountIn in X atoms)
-    //      Ask: > 1.0 = worse price for buyer (amountIn in Y atoms)
+    //    priceFactor is a multiplier on the swap output:
+    //      Bid: < 1.0 = reduced output for seller (amountIn in X atoms)
+    //      Ask: < 1.0 = reduced output for buyer (amountIn in Y atoms)
+    //    Both sides use factors < 1.0 to create a spread.
     //
     //    Points define a depth curve with a kink at 750 X:
     //    smooth degradation up to 500 X, then +50 bps step.
@@ -116,16 +117,16 @@ describe("Initialize pool with price and risk curves", () => {
         slot: 0,
         points: [
           { amountIn: 0n,                 priceFactor: 1.0 },       // midprice
-          { amountIn: 15_000_000_000n,    priceFactor: 1.00067 },   // 15k Y  ≈ 100 X-equiv
-          { amountIn: 37_500_000_000n,    priceFactor: 1.00133 },   // 37.5k  ≈ 250 X-equiv
-          { amountIn: 75_000_000_000n,    priceFactor: 1.00206 },   // 75k    ≈ 500 X-equiv
-          { amountIn: 112_500_000_000n,   priceFactor: 1.00756 },   // 112.5k ≈ 750 X  ← +50 bps kink
-          { amountIn: 150_000_000_000n,   priceFactor: 1.00794 },   // 150k   ≈ 1,000 X-equiv
-          { amountIn: 225_000_000_000n,   priceFactor: 1.00851 },   // 225k   ≈ 1,500 X-equiv
-          { amountIn: 300_000_000_000n,   priceFactor: 1.00894 },   // 300k   ≈ 2,000 X-equiv
-          { amountIn: 375_000_000_000n,   priceFactor: 1.00928 },   // 375k   ≈ 2,500 X-equiv
-          { amountIn: 450_000_000_000n,   priceFactor: 1.00955 },   // 450k   ≈ 3,000 X-equiv
-          { amountIn: 600_000_000_000n,   priceFactor: 1.01000 },   // 600k   ≈ 4,000 X-equiv (+100 bps)
+          { amountIn: 15_000_000_000n,    priceFactor: 0.99933 },   // 15k Y  ≈ 100 X-equiv
+          { amountIn: 37_500_000_000n,    priceFactor: 0.99867 },   // 37.5k  ≈ 250 X-equiv
+          { amountIn: 75_000_000_000n,    priceFactor: 0.99794 },   // 75k    ≈ 500 X-equiv
+          { amountIn: 112_500_000_000n,   priceFactor: 0.99244 },   // 112.5k ≈ 750 X  ← +50 bps kink
+          { amountIn: 150_000_000_000n,   priceFactor: 0.99206 },   // 150k   ≈ 1,000 X-equiv
+          { amountIn: 225_000_000_000n,   priceFactor: 0.99149 },   // 225k   ≈ 1,500 X-equiv
+          { amountIn: 300_000_000_000n,   priceFactor: 0.99106 },   // 300k   ≈ 2,000 X-equiv
+          { amountIn: 375_000_000_000n,   priceFactor: 0.99073 },   // 375k   ≈ 2,500 X-equiv
+          { amountIn: 450_000_000_000n,   priceFactor: 0.99045 },   // 450k   ≈ 3,000 X-equiv
+          { amountIn: 600_000_000_000n,   priceFactor: 0.99000 },   // 600k   ≈ 4,000 X-equiv (-100 bps)
         ],
       }),
       [authority]

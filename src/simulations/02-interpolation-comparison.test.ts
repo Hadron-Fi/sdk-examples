@@ -225,8 +225,8 @@ const BID_POINTS = [
 
 const ASK_POINTS = [
   { volume: 0,      priceFactor: 1.0 },
-  { volume: 75000,  priceFactor: 1.005 },
-  { volume: 150000, priceFactor: 1.02 },
+  { volume: 75000,  priceFactor: 0.995 },
+  { volume: 150000, priceFactor: 0.98 },
 ];
 
 const RISK_POINTS_BID = [

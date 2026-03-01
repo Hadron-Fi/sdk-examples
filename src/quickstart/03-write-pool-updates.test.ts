@@ -160,14 +160,14 @@ describe("Write pool updates", () => {
     }
 
     const ops: CurveUpdateOp[] = [
-      // Edit point 0 — shift origin factor to 1.001
+      // Edit point 0 — shift origin factor to 0.999
       {
         curveType: CurveType.PriceBid,
         opKind: CurveUpdateOpKind.Edit,
         pointIndex: 0,
         interpolation: Interpolation.Linear,
         amountIn: bidPts[0].amountIn,
-        priceFactorQ32: toQ32(1.001),
+        priceFactorQ32: toQ32(0.999),
         params: new Uint8Array(4),
       },
       // Edit point 1 — tighten factor to 0.9995
