@@ -2,10 +2,10 @@
 
 End-to-end examples for the [Hadron AMM](https://hadron.fi) SDK on Solana in both **TypeScript** and **Rust**. Create a fully configured pool on devnet, inspect and update it, then simulate and visualize depth curves locally.
 
-```
-src-ts/   TypeScript examples (quickstart + simulations)  → see src-ts/README.md
-src-rs/   Rust examples (quickstart)                      → see src-rs/README.md
-```
+| | Guide | Examples |
+|---|-------|---------|
+| **TypeScript** | [src-ts/README.md](src-ts/README.md) | Quickstart + LiteSVM simulations |
+| **Rust** | [src-rs/README.md](src-rs/README.md) | Quickstart (devnet reads & writes) |
 
 Both languages share the same `output/` directory — you can create a pool in TS and read it in Rust, or vice versa.
 
