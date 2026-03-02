@@ -5,14 +5,12 @@
   "type": "module",
   "description": "Hadron AMM SDK usage examples",
   "scripts": {
-    "init": "vitest run src/quickstart/01-initialize-pool.test.ts",
-    "read": "vitest run src/quickstart/02-read-pool-state.test.ts",
-    "write": "vitest run src/quickstart/03-write-pool-updates.test.ts",
-    "spread": "vitest run src/quickstart/04-spread-config.test.ts",
-    "depth-curves": "vitest run src/simulations/01-depth-curves.test.ts",
-    "interp": "vitest run src/simulations/02-interpolation-comparison.test.ts",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "init": "tsx src/quickstart/01-initialize-pool.ts",
+    "read": "tsx src/quickstart/02-read-pool-state.ts",
+    "write": "tsx src/quickstart/03-write-pool-updates.ts",
+    "spread": "tsx src/quickstart/04-spread-config.ts",
+    "depth-curves": "tsx src/simulations/01-depth-curves.ts",
+    "interp": "tsx src/simulations/02-interpolation-comparison.ts"
   },
   "dependencies": {
     "@hadron-fi/sdk": "^0.3.3",
@@ -23,6 +21,6 @@
   "devDependencies": {
     "litesvm": "^0.5.0",
     "typescript": "^5.4.0",
-    "vitest": "^4.0.18"
+    "tsx": "^4.19.0"
   }
 }

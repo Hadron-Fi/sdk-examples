@@ -16,7 +16,7 @@ npm run depth-curves  Simulate & visualize depth across multiple inventory level
                          ↳ output/depth-curves.html
 ```
 
-> To customize the pool, edit [`src/quickstart/01-initialize-pool.test.ts`](src/quickstart/01-initialize-pool.test.ts) and re-run `npm run init`.
+> To customize the pool, edit [`src/quickstart/01-initialize-pool.ts`](src/quickstart/01-initialize-pool.ts) and re-run `npm run init`.
 
 ## Key Concepts
 
@@ -35,19 +35,17 @@ Hadron pools expose **6 levers** for controlling pricing:
 
 | # | File | Description | Run |
 |---|------|-------------|-----|
-| 01 | [Initialize Pool](src/quickstart/01-initialize-pool.test.ts) | Creates a pool from scratch: mints, curves, deposit, midprice. Edit this file to customize the pool. | `npm run init` |
-| 02 | [Read Pool State](src/quickstart/02-read-pool-state.test.ts) | Prints midprice, spread, decoded curve points, vault balances, and oracle state for an existing pool. | `npm run read` |
-| 03 | [Write Pool Updates](src/quickstart/03-write-pool-updates.test.ts) | Updates midprice, base spread, and curve points on a live pool, then executes a swap. | `npm run write` |
-| 04 | [Spread Config](src/quickstart/04-spread-config.test.ts) | Full spread trigger lifecycle: initialize, add/update/remove triggers, swap at each stage. | `npm run spread` |
+| 01 | [Initialize Pool](src/quickstart/01-initialize-pool.ts) | Creates a pool from scratch: mints, curves, deposit, midprice. Edit this file to customize the pool. | `npm run init` |
+| 02 | [Read Pool State](src/quickstart/02-read-pool-state.ts) | Prints midprice, spread, decoded curve points, vault balances, and oracle state for an existing pool. | `npm run read` |
+| 03 | [Write Pool Updates](src/quickstart/03-write-pool-updates.ts) | Updates midprice, base spread, and curve points on a live pool, then executes a swap. | `npm run write` |
+| 04 | [Spread Config](src/quickstart/04-spread-config.ts) | Full spread trigger lifecycle: initialize, add/update/remove triggers, swap at each stage. | `npm run spread` |
 
 ### Simulations | local LiteSVM
 
 | # | File | Description | Run |
 |---|------|-------------|-----|
-| 01 | [Depth Curves](src/simulations/01-depth-curves.test.ts) | Recreates the pool in LiteSVM at multiple inventory levels and generates an interactive depth chart. | `npm run depth-curves` |
-| 02 | [Interpolation Comparison](src/simulations/02-interpolation-comparison.test.ts) | Compares Step, Linear, Hyperbolic, Quadratic, and Cubic interpolation on the same control points. | `npm run interp` |
-
-Run all: `npm test`
+| 01 | [Depth Curves](src/simulations/01-depth-curves.ts) | Recreates the pool in LiteSVM at multiple inventory levels and generates an interactive depth chart. | `npm run depth-curves` |
+| 02 | [Interpolation Comparison](src/simulations/02-interpolation-comparison.ts) | Compares Step, Linear, Hyperbolic, Quadratic, and Cubic interpolation on the same control points. | `npm run interp` |
 
 ## Setup
 

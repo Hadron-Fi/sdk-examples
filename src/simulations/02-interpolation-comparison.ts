@@ -18,7 +18,6 @@
  * Output:
  *   output/interp-comparison.html
  */
-import { describe, it } from "vitest";
 import { LiteSVM, FeatureSet } from "litesvm";
 import {
   Connection,
@@ -49,11 +48,14 @@ import {
 } from "@hadron-fi/sdk";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { logHeader, logInfo, PROGRAM_ID } from "../setup";
 
 // ============================================================================
 // LiteSVM helpers
 // ============================================================================
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PROGRAM_PATH = path.resolve(__dirname, "../../programs/hadron.so");
 
@@ -481,121 +483,122 @@ function generateInterpHtml(
 }
 
 // ============================================================================
-// Test
+// Main
 // ============================================================================
 
-describe("Interpolation comparison", () => {
-  it("compares 5 interpolation modes via bid depth probes and generates HTML", async () => {
-    logHeader("Setting up LiteSVM");
+(async () => {
+  logHeader("Setting up LiteSVM");
 
-    const svm = LiteSVM.default()
-      .withFeatureSet(FeatureSet.allEnabled())
-      .withSigverify(false)
-      .withBuiltins()
-      .withSysvars()
-      .withDefaultPrograms()
-      .withLamports(1_000_000_000_000_000n);
+  const svm = LiteSVM.default()
+    .withFeatureSet(FeatureSet.allEnabled())
+    .withSigverify(false)
+    .withBuiltins()
+    .withSysvars()
+    .withDefaultPrograms()
+    .withLamports(1_000_000_000_000_000n);
 
-    svm.addProgramFromFile(PROGRAM_ID, PROGRAM_PATH);
+  svm.addProgramFromFile(PROGRAM_ID, PROGRAM_PATH);
 
-    const payer = Keypair.generate();
-    svm.airdrop(payer.publicKey, 100_000_000_000_000n);
+  const payer = Keypair.generate();
+  svm.airdrop(payer.publicKey, 100_000_000_000_000n);
 
-    const mintX = Keypair.generate();
-    const mintY = Keypair.generate();
-    createMintInSvm(svm, payer, mintX, DECIMALS_X);
-    createMintInSvm(svm, payer, mintY, DECIMALS_Y);
+  const mintX = Keypair.generate();
+  const mintY = Keypair.generate();
+  createMintInSvm(svm, payer, mintX, DECIMALS_X);
+  createMintInSvm(svm, payer, mintY, DECIMALS_Y);
 
-    // Fetch fee config from devnet
-    const [feeConfigPda] = getFeeConfigAddress();
-    const rpcUrl = process.env.RPC_URL || "https://api.devnet.solana.com";
-    const devnetConn = new Connection(rpcUrl, "confirmed");
-    const feeConfigAcct = await devnetConn.getAccountInfo(feeConfigPda);
-    if (!feeConfigAcct) throw new Error("Fee config not found on devnet");
+  // Fetch fee config from devnet
+  const [feeConfigPda] = getFeeConfigAddress();
+  const rpcUrl = process.env.RPC_URL || "https://api.devnet.solana.com";
+  const devnetConn = new Connection(rpcUrl, "confirmed");
+  const feeConfigAcct = await devnetConn.getAccountInfo(feeConfigPda);
+  if (!feeConfigAcct) throw new Error("Fee config not found on devnet");
 
-    svm.setAccount(feeConfigPda, {
-      lamports: BigInt(feeConfigAcct.lamports),
-      data: Buffer.from(feeConfigAcct.data),
-      owner: HADRON_PROGRAM_ID,
-      executable: false,
-    });
+  svm.setAccount(feeConfigPda, {
+    lamports: BigInt(feeConfigAcct.lamports),
+    data: Buffer.from(feeConfigAcct.data),
+    owner: HADRON_PROGRAM_ID,
+    executable: false,
+  });
 
-    const feeConfig = decodeFeeConfig(feeConfigAcct.data);
-    const feeRecipient = feeConfig.feeRecipient;
-    svm.airdrop(feeRecipient, 1_000_000_000n);
+  const feeConfig = decodeFeeConfig(feeConfigAcct.data);
+  const feeRecipient = feeConfig.feeRecipient;
+  svm.airdrop(feeRecipient, 1_000_000_000n);
 
-    // Create ATAs
-    createAtaIfNeeded(svm, payer, feeRecipient, mintX.publicKey);
-    createAtaIfNeeded(svm, payer, feeRecipient, mintY.publicKey);
-    createAtaIfNeeded(svm, payer, payer.publicKey, mintX.publicKey);
-    const payerAtaY = createAtaIfNeeded(svm, payer, payer.publicKey, mintY.publicKey);
+  // Create ATAs
+  createAtaIfNeeded(svm, payer, feeRecipient, mintX.publicKey);
+  createAtaIfNeeded(svm, payer, feeRecipient, mintY.publicKey);
+  createAtaIfNeeded(svm, payer, payer.publicKey, mintX.publicKey);
+  const payerAtaY = createAtaIfNeeded(svm, payer, payer.publicKey, mintY.publicKey);
 
-    // Mint large supply
-    const payerAtaX = getAssociatedTokenAddressSync(mintX.publicKey, payer.publicKey, true);
-    sendTx(svm, payer, [
-      createMintToInstruction(mintX.publicKey, payerAtaX, payer.publicKey, BigInt("1000000000000000000")),
-      createMintToInstruction(mintY.publicKey, payerAtaY, payer.publicKey, BigInt("1000000000000000000")),
-    ]);
+  // Mint large supply
+  const payerAtaX = getAssociatedTokenAddressSync(mintX.publicKey, payer.publicKey, true);
+  sendTx(svm, payer, [
+    createMintToInstruction(mintX.publicKey, payerAtaX, payer.publicKey, BigInt("1000000000000000000")),
+    createMintToInstruction(mintY.publicKey, payerAtaY, payer.publicKey, BigInt("1000000000000000000")),
+  ]);
 
-    // -----------------------------------------------------------------
-    // Collect bid depth data for each mode
-    // -----------------------------------------------------------------
-    const modeResults: ModeResult[] = [];
+  // -----------------------------------------------------------------
+  // Collect bid depth data for each mode
+  // -----------------------------------------------------------------
+  const modeResults: ModeResult[] = [];
 
-    for (const mode of MODES) {
-      logHeader(`Probing: ${mode.name}`);
-      const result = collectModeBidDepth(
-        svm, payer, mintX.publicKey, mintY.publicKey,
-        payerAtaY, feeRecipient, mode
-      );
-      logInfo("Bid points:", String(result.bid.length));
-      modeResults.push(result);
-    }
-
-    // -----------------------------------------------------------------
-    // Generate HTML
-    // -----------------------------------------------------------------
-    const outputDir = path.resolve(__dirname, "../../output");
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-    const htmlPath = path.join(outputDir, "interp-comparison.html");
-    generateInterpHtml(modeResults, htmlPath);
-
-    logHeader("Done!");
-    logInfo("Visualization:", htmlPath);
-
-    // -----------------------------------------------------------------
-    // Print comparison table
-    // -----------------------------------------------------------------
-    logHeader("Summary table");
-
-    const sampleVolumes = [22, 100, 250, 500, 750, 1000, 1100];
-    const colW = 14;
-    const volW = 14;
-    const modeNames = MODES.map((m) => m.name);
-    const sep = "─".repeat(volW) + "┼" + modeNames.map(() => "─".repeat(colW)).join("┼");
-
-    console.log("\nEffective Bid Price (Y/X) at select volumes");
-    console.log(sep);
-    console.log(
-      "Volume (X)".padEnd(volW) + "│" +
-      modeNames.map((n) => n.padStart(colW)).join("│")
+  for (const mode of MODES) {
+    logHeader(`Probing: ${mode.name}`);
+    const result = collectModeBidDepth(
+      svm, payer, mintX.publicKey, mintY.publicKey,
+      payerAtaY, feeRecipient, mode
     );
-    console.log(sep);
+    logInfo("Bid points:", String(result.bid.length));
+    modeResults.push(result);
+  }
 
-    for (const targetVol of sampleVolumes) {
-      const cells = modeResults.map((m) => {
-        const closest = m.bid.reduce<DepthPoint | null>((best, pt) => {
-          if (!best) return pt;
-          return Math.abs(pt.cumVolume - targetVol) < Math.abs(best.cumVolume - targetVol) ? pt : best;
-        }, null);
-        return closest
-          ? closest.price.toFixed(3).padStart(colW)
-          : "—".padStart(colW);
-      });
-      console.log(String(targetVol).padEnd(volW) + "│" + cells.join("│"));
-    }
+  // -----------------------------------------------------------------
+  // Generate HTML
+  // -----------------------------------------------------------------
+  const outputDir = path.resolve(__dirname, "../../output");
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+  const htmlPath = path.join(outputDir, "interp-comparison.html");
+  generateInterpHtml(modeResults, htmlPath);
 
-    console.log(sep);
-    console.log("");
-  }, 300_000);
+  logHeader("Done!");
+  logInfo("Visualization:", htmlPath);
+
+  // -----------------------------------------------------------------
+  // Print comparison table
+  // -----------------------------------------------------------------
+  logHeader("Summary table");
+
+  const sampleVolumes = [22, 100, 250, 500, 750, 1000, 1100];
+  const colW = 14;
+  const volW = 14;
+  const modeNames = MODES.map((m) => m.name);
+  const sep = "─".repeat(volW) + "┼" + modeNames.map(() => "─".repeat(colW)).join("┼");
+
+  console.log("\nEffective Bid Price (Y/X) at select volumes");
+  console.log(sep);
+  console.log(
+    "Volume (X)".padEnd(volW) + "│" +
+    modeNames.map((n) => n.padStart(colW)).join("│")
+  );
+  console.log(sep);
+
+  for (const targetVol of sampleVolumes) {
+    const cells = modeResults.map((m) => {
+      const closest = m.bid.reduce<DepthPoint | null>((best, pt) => {
+        if (!best) return pt;
+        return Math.abs(pt.cumVolume - targetVol) < Math.abs(best.cumVolume - targetVol) ? pt : best;
+      }, null);
+      return closest
+        ? closest.price.toFixed(3).padStart(colW)
+        : "—".padStart(colW);
+    });
+    console.log(String(targetVol).padEnd(volW) + "│" + cells.join("│"));
+  }
+
+  console.log(sep);
+  console.log("");
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
 });

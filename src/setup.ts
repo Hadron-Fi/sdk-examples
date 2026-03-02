@@ -1,16 +1,18 @@
+import "dotenv/config";
+
 /**
- * Shared test harness for Hadron examples.
+ * Shared harness for Hadron examples.
  *
  * Supports two modes controlled by env vars:
  *
  *   LiteSVM (default):
- *     npm test
+ *     npm run init
  *
  *   Devnet:
- *     NETWORK=devnet WALLET=./wallet.json npm test
+ *     NETWORK=devnet WALLET=./wallet.json npm run init
  *
  *   Custom RPC:
- *     NETWORK=devnet WALLET=./wallet.json RPC_URL=https://my-rpc.com npm test
+ *     NETWORK=devnet WALLET=./wallet.json RPC_URL=https://my-rpc.com npm run init
  *
  * See .env.example for all options.
  */
@@ -43,6 +45,9 @@ import {
 } from "@hadron-fi/sdk";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const PROGRAM_ID = HADRON_PROGRAM_ID;
 
