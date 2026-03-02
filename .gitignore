@@ -1,5 +1,6 @@
 node_modules/
 dist/
+target/
 output/
 .env
 wallet.json
