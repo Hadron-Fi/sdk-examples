@@ -6,6 +6,6 @@ RUN apt-get update && apt-get install -y curl && \
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY src/ src/
+COPY src-ts/ src-ts/
 COPY programs/ programs/
 COPY tsconfig.json ./

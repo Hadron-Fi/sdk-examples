@@ -1,0 +1,32 @@
+[package]
+name = "hadron-examples-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Rust examples for the Hadron AMM SDK"
+
+[[bin]]
+name = "init-pool"
+path = "src-rs/quickstart/01-init-pool.rs"
+
+[[bin]]
+name = "read-pool"
+path = "src-rs/quickstart/02-read-pool.rs"
+
+[[bin]]
+name = "write-pool"
+path = "src-rs/quickstart/03-write-pool.rs"
+
+[[bin]]
+name = "spread-config"
+path = "src-rs/quickstart/04-spread-config.rs"
+
+[dependencies]
+hadron-sdk = { path = "../hadron-sdk-rs", features = ["rpc"] }
+solana-sdk = "2.2"
+solana-client = "2.2"
+spl-token = { version = "8", features = ["no-entrypoint"] }
+spl-associated-token-account = { version = "7", features = ["no-entrypoint"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dotenv = "0.15"
+chrono = "0.4"
