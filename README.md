@@ -18,24 +18,16 @@ npm run depth-curves  Simulate & visualize depth across 21 inventory levels
 
 > To customize the pool, edit [`src/quickstart/01-initialize-pool.test.ts`](src/quickstart/01-initialize-pool.test.ts) and re-run `npm run init`.
 
-## Table of Contents
-
-- [Key Concepts](#key-concepts)
-- [Setup](#setup)
-- [Quick Start](#quick-start)
-- [Examples](#examples)
-- [Configuration](#configuration)
-- [Output Files](#output-files)
-
 ## Key Concepts
 
-Hadron pools expose **5 levers** for controlling pricing:
+Hadron pools expose **6 levers** for controlling pricing:
 
-1. **Midprice** — Oracle price pushed by the authority via `updateMidprice`.
-2. **Base spread** — Symmetric bid/ask offset around midprice (e.g. 10 bps).
-3. **Price curves** — Price degradation as a function of trade size (depth).
-4. **Risk curves** — Price adjustment based on vault inventory imbalance.
-5. **Curve updates** — Real-time curve edits queued via `submitCurveUpdates`, applied atomically on the next swap.
+1. **Midprice**: oracle price pushed by the authority via `updateMidprice`
+2. **Base spread**: symmetric bid/ask offset around midprice (e.g. 10 bps)
+3. **Price curves**: price degradation as a function of trade size (depth)
+4. **Risk curves**: price adjustment based on vault inventory imbalance
+5. **Curve updates**: real-time curve edits queued via `submitCurveUpdates`, applied atomically on the next swap
+6. **Spread triggers**: per-account spread overrides that automatically widen the bid/ask when specific signers (e.g. known arb bots) are present in a swap
 
 ## Setup
 
@@ -63,7 +55,7 @@ Copy the example env file and edit if needed:
 cp .env.example .env
 ```
 
-The defaults work out of the box — they point to devnet with `./wallet.json`:
+The defaults work out of the box, pointing to devnet with `./wallet.json`:
 
 ```
 NETWORK=devnet
@@ -78,17 +70,17 @@ If you have a custom RPC endpoint (e.g. Helius, Triton), set `RPC_URL` in `.env`
 Run these commands **in order**. Each step builds on the previous one.
 
 ```bash
-# 1. Create a pool on devnet — mints two tokens, sets curves, deposits liquidity
+# 1. Create a pool on devnet | mints two tokens, sets curves, deposits liquidity
 #    Saves pool address + authority keypair to output/pool-config.json
 npm run init
 
-# 2. Read pool state — midprice, spread, active curves, vault balances
+# 2. Read pool state | midprice, spread, active curves, vault balances
 POOL=<address> npm run read
 
-# 3. Update the pool — change midprice, spread, edit curves, execute a swap
+# 3. Update the pool | change midprice, spread, edit curves, execute a swap
 POOL=<address> npm run write
 
-# 4. Configure spread triggers — add/update/remove triggers, swap at different widths
+# 4. Configure spread triggers | add/update/remove triggers, swap at different widths
 POOL=<address> npm run spread
 
 # 5. Simulate depth curves across 21 inventory levels (runs locally in LiteSVM)
@@ -98,21 +90,21 @@ npm run depth-curves        # → output/depth-curves.html
 npm run interp              # → output/interp-comparison.html
 ```
 
-## Examples
+## Key Files
 
-### Quickstart — devnet pool lifecycle
+### Quickstart | devnet pool lifecycle
 
-| # | Example | What it demonstrates | Run |
-|---|---------|---------------------|-----|
+| # | File | Description | Run |
+|---|------|-------------|-----|
 | 01 | [Initialize Pool](src/quickstart/01-initialize-pool.test.ts) | Create mints, initialize a pool, set price + risk curves, deposit liquidity, update midprice | `npm run init` |
 | 02 | [Read Pool State](src/quickstart/02-read-pool-state.test.ts) | Load an existing pool and print midprice, spread, active curves, vault balances, and oracle state | `npm run read` |
 | 03 | [Write Pool Updates](src/quickstart/03-write-pool-updates.test.ts) | `updateMidprice`, `updateBaseSpread`, `submitCurveUpdates`, and swaps on a live devnet pool | `npm run write` |
 | 04 | [Spread Config](src/quickstart/04-spread-config.test.ts) | Initialize a spread config, add/update/remove spread triggers, and swap at different spread widths | `npm run spread` |
 
-### Simulations — local LiteSVM
+### Simulations | local LiteSVM
 
-| # | Example | What it demonstrates | Run |
-|---|---------|---------------------|-----|
+| # | File | Description | Run |
+|---|------|-------------|-----|
 | 01 | [Depth Curves](src/simulations/01-depth-curves.test.ts) | Recreate the pool in LiteSVM at 21 inventory levels, probe swap prices, generate interactive HTML visualization | `npm run depth-curves` |
 | 02 | [Interpolation Comparison](src/simulations/02-interpolation-comparison.test.ts) | Compare Step, Linear, Hyperbolic, Quadratic, and Cubic interpolation modes on the same control points via probe swaps | `npm run interp` |
 
@@ -121,18 +113,6 @@ Run all examples:
 ```bash
 npm test
 ```
-
-## Configuration
-
-All configuration is via `.env` (loaded automatically by dotenv):
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `NETWORK` | `litesvm` | `litesvm` for local testing, `devnet` for live |
-| `WALLET` | — | Path to keypair JSON (required for devnet) |
-| `RPC_URL` | `https://api.devnet.solana.com` | Custom RPC endpoint |
-
-See [`.env.example`](.env.example) for a template.
 
 ## Output Files
 
@@ -145,4 +125,4 @@ All examples write to `output/`:
 | `depth-curves.html` | `npm run depth-curves` | Interactive depth chart with inventory slider |
 | `interp-comparison.html` | `npm run interp` | Side-by-side interpolation mode comparison |
 
-You can run `npm run init` multiple times — each run appends a new pool to `pool-config.json`. Subsequent commands (`read`, `write`, `spread`, `depth-curves`) always use the most recent pool.
+You can run `npm run init` multiple times: each run appends a new pool to `pool-config.json`. Subsequent commands (`read`, `write`, `spread`, `depth-curves`) always use the most recent pool.
