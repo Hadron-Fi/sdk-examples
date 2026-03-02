@@ -57,10 +57,10 @@ fn main() {
     // 2. Initialize the pool
     // ---------------------------------------------------------------
     log_header("Step 2 — Initialize pool");
-    let initial_midprice = 150.0; // e.g. 150 USDC per token
+    let initial_midprice = 150.0;
 
     let init_params = InitializeParams {
-        seed: None, // auto-generate
+        seed: None,
         mint_x: mint_x.pubkey(),
         mint_y: mint_y.pubkey(),
         authority: authority.pubkey(),
@@ -95,13 +95,13 @@ fn main() {
         SetCurvePointInput { amount_in: 100_000_000,     price_factor_q32: to_q32(0.99933), interpolation: None, params: None },
         SetCurvePointInput { amount_in: 250_000_000,     price_factor_q32: to_q32(0.99867), interpolation: None, params: None },
         SetCurvePointInput { amount_in: 500_000_000,     price_factor_q32: to_q32(0.99794), interpolation: None, params: None },
-        SetCurvePointInput { amount_in: 750_000_000,     price_factor_q32: to_q32(0.99244), interpolation: None, params: None }, // +50 bps kink
+        SetCurvePointInput { amount_in: 750_000_000,     price_factor_q32: to_q32(0.99244), interpolation: None, params: None },
         SetCurvePointInput { amount_in: 1_000_000_000,   price_factor_q32: to_q32(0.99206), interpolation: None, params: None },
         SetCurvePointInput { amount_in: 1_500_000_000,   price_factor_q32: to_q32(0.99149), interpolation: None, params: None },
         SetCurvePointInput { amount_in: 2_000_000_000,   price_factor_q32: to_q32(0.99106), interpolation: None, params: None },
         SetCurvePointInput { amount_in: 2_500_000_000,   price_factor_q32: to_q32(0.99073), interpolation: None, params: None },
         SetCurvePointInput { amount_in: 3_000_000_000,   price_factor_q32: to_q32(0.99045), interpolation: None, params: None },
-        SetCurvePointInput { amount_in: 4_000_000_000,   price_factor_q32: to_q32(0.99000), interpolation: None, params: None }, // -100 bps
+        SetCurvePointInput { amount_in: 4_000_000_000,   price_factor_q32: to_q32(0.99000), interpolation: None, params: None },
     ];
 
     let ix = pool.set_curve(
@@ -201,15 +201,15 @@ fn main() {
     // Create authority ATAs and mint tokens
     let user_ata_x = create_ata(&rpc, &payer, &authority.pubkey(), &mint_x.pubkey());
     let user_ata_y = create_ata(&rpc, &payer, &authority.pubkey(), &mint_y.pubkey());
-    mint_to(&rpc, &payer, &mint_x.pubkey(), &user_ata_x, 10_000_000_000); // 10k X
-    mint_to(&rpc, &payer, &mint_y.pubkey(), &user_ata_y, 1_500_000_000_000); // 1.5M Y
+    mint_to(&rpc, &payer, &mint_x.pubkey(), &user_ata_x, 10_000_000_000);
+    mint_to(&rpc, &payer, &mint_y.pubkey(), &user_ata_y, 1_500_000_000_000);
 
-    // 50/50 value deposit: 5,000 X ($750k) + 750,000 Y ($750k)
+    // 50/50 value deposit
     let ix = pool.deposit(
         &authority.pubkey(),
         &DepositParams {
-            amount_x: 5_000_000_000,     // 5,000 X
-            amount_y: 750_000_000_000,   // 750,000 Y
+            amount_x: 5_000_000_000, 
+            amount_y: 750_000_000_000,
             expiration: None,
         },
     );

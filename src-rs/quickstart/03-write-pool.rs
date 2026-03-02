@@ -59,8 +59,8 @@ fn main() {
     let user_ata_y = create_ata(&rpc, &payer, &authority.pubkey(), &mint_y);
     create_ata(&rpc, &payer, &fee_recipient, &mint_x);
     create_ata(&rpc, &payer, &fee_recipient, &mint_y);
-    mint_to(&rpc, &payer, &mint_x, &user_ata_x, 10_000_000_000); // 10k X
-    mint_to(&rpc, &payer, &mint_y, &user_ata_y, 10_000_000_000); // 10k Y
+    mint_to(&rpc, &payer, &mint_x, &user_ata_x, 10_000_000_000);
+    mint_to(&rpc, &payer, &mint_y, &user_ata_y, 10_000_000_000);
     log_info("Minted:", "10,000 X + 10,000 Y to authority");
 
     // ------------------------------------------------------------------
