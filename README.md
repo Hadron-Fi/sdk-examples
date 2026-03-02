@@ -45,7 +45,26 @@ RPC_URL=https://api.devnet.solana.com
 
 Set `RPC_URL` if you have a custom endpoint (Helius, Triton, etc).
 
-### 3. Install dependencies
+### 3. System prerequisites (Linux / EC2)
+
+The Rust examples depend on Solana crates which require a C toolchain and OpenSSL headers. On Ubuntu/Debian:
+
+```bash
+sudo apt update && sudo apt install build-essential pkg-config libssl-dev -y
+```
+
+Install Rust via [rustup](https://rustup.rs) (not `apt install rustc`):
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+```
+
+> **Disk space:** The Solana dependency tree is large. Ensure at least **5 GB free** for the build `target/` directory.
+
+On macOS these are typically already available via Xcode Command Line Tools.
+
+### 4. Install dependencies
 
 ```bash
 npm install           # TypeScript
@@ -62,6 +81,7 @@ Run in order — each step builds on the previous one.
 | Read state | `npm run read` | `cargo run --bin read-pool` |
 | Update & swap | `npm run write` | `cargo run --bin write-pool` |
 | Spread triggers | `npm run spread` | `cargo run --bin spread-config` |
+| Delta staleness | `npm run delta-staleness` | `cargo run --bin delta-staleness` |
 | Depth curves | `npm run depth-curves` | — |
 | Interpolation modes | `npm run interp` | — |
 
