@@ -20,6 +20,10 @@ path = "src-rs/quickstart/03-write-pool.rs"
 name = "spread-config"
 path = "src-rs/quickstart/04-spread-config.rs"
 
+[[bin]]
+name = "delta-staleness"
+path = "src-rs/quickstart/05-delta-staleness.rs"
+
 [dependencies]
 hadron-sdk = { version = "0.1", features = ["rpc"] }
 solana-sdk = "2.2"

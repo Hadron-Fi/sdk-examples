@@ -247,7 +247,10 @@ pub fn log_info(label: &str, value: &str) {
 }
 
 pub fn log_tx(label: &str, sig: &Signature) {
-    println!("  \x1b[32m✓\x1b[0m {} — {}", label, sig);
+    println!(
+        "  \x1b[32m✓\x1b[0m {} https://solscan.io/tx/{}?cluster=devnet",
+        label, sig
+    );
 }
 
 pub fn log_explorer(label: &str, address: &str) {

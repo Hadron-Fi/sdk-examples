@@ -9,6 +9,7 @@
     "read": "tsx src-ts/quickstart/02-read-pool-state.ts",
     "write": "tsx src-ts/quickstart/03-write-pool-updates.ts",
     "spread": "tsx src-ts/quickstart/04-spread-config.ts",
+    "delta-staleness": "tsx src-ts/quickstart/05-delta-staleness.ts",
     "depth-curves": "tsx src-ts/simulations/01-depth-curves.ts",
     "interp": "tsx src-ts/simulations/02-interpolation-comparison.ts",
     "docker:build": "docker build -t hadron-examples .",
