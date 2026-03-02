@@ -48,7 +48,25 @@ function loadPool(svm, addr) {
 }
 
 async function main() {
-  console.log("A. Fetch fee config from devnet");
+  // Check system limits
+  try {
+    const fs = require("fs");
+    const maps = fs.readFileSync("/proc/self/maps", "utf-8").split("\n").length;
+    const maxMap = fs.readFileSync("/proc/sys/vm/max_map_count", "utf-8").trim();
+    const meminfo = fs.readFileSync("/proc/meminfo", "utf-8");
+    const memTotal = meminfo.match(/MemTotal:\s+(\d+)/)?.[1];
+    const memAvail = meminfo.match(/MemAvailable:\s+(\d+)/)?.[1];
+    const swapTotal = meminfo.match(/SwapTotal:\s+(\d+)/)?.[1];
+    console.log(`System: ${Math.round(memTotal/1024)}MB total, ${Math.round(memAvail/1024)}MB avail, ${Math.round(swapTotal/1024)}MB swap`);
+    console.log(`Maps: ${maps} used, max=${maxMap}`);
+    const rlimit = fs.readFileSync("/proc/self/limits", "utf-8");
+    const vmLine = rlimit.split("\n").find(l => l.includes("virtual memory"));
+    const stackLine = rlimit.split("\n").find(l => l.includes("stack size"));
+    console.log(`Limits: ${vmLine}`);
+    console.log(`Limits: ${stackLine}`);
+  } catch(e) { console.log("Could not read system info:", e.message); }
+
+  console.log("\nA. Fetch fee config from devnet");
   const rpcUrl = process.env.RPC_URL || "https://api.devnet.solana.com";
   const conn = new Connection(rpcUrl, "confirmed");
   const [feeConfigPda] = getFeeConfigAddress();
