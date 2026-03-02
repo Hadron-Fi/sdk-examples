@@ -136,14 +136,7 @@ function injectTokenAccount(
   mint.toBuffer().copy(data, 0);         // mint (32)
   owner.toBuffer().copy(data, 32);       // owner (32)
   data.writeBigUInt64LE(amount, 64);     // amount (8)
-  // delegateOption = 0 (72, 4 bytes) — already zeroed
-  // delegate (76, 32 bytes) — zeroed
   data.writeUInt8(1, 108);               // state = Initialized
-  // isNativeOption = 0 (109, 4 bytes) — zeroed
-  // isNative (113, 8 bytes) — zeroed
-  // delegatedAmount (121, 8 bytes) — zeroed
-  // closeAuthorityOption = 0 (129, 4 bytes) — zeroed
-  // closeAuthority (133, 32 bytes) — zeroed
   svm.setAccount(ata, {
     lamports: 1_000_000_000n,
     data,
@@ -449,12 +442,12 @@ function collectRiskData(
     const bidPrice =
       bidResult && bidResult.amountOut > 0n
         ? atomsToHuman(bidResult.amountOut, config.decimalsY) /
-          atomsToHuman(bidResult.amountIn, config.decimalsX)
+        atomsToHuman(bidResult.amountIn, config.decimalsX)
         : null;
     const askPrice =
       askResult && askResult.amountOut > 0n
         ? atomsToHuman(askResult.amountIn, config.decimalsY) /
-          atomsToHuman(askResult.amountOut, config.decimalsX)
+        atomsToHuman(askResult.amountOut, config.decimalsX)
         : null;
 
     results.push({ pctBase, bidPrice, askPrice });
