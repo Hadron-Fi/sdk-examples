@@ -1,7 +1,9 @@
 const { LiteSVM, FeatureSet } = require("litesvm");
+const { PublicKey } = require("@solana/web3.js");
 const path = require("path");
 
 const PROGRAM_PATH = path.resolve(__dirname, "programs/hadron.so");
+const PROGRAM_ID = new PublicKey("hdrn4UEBJFjPEuUQnmRoA7YoXMeTcXVvMmME8sNFEkP");
 
 // Test 1: Can we create multiple SVM instances?
 console.log("Test 1: Create 5 SVM instances sequentially...");
@@ -26,10 +28,7 @@ const svm = LiteSVM.default()
   .withSysvars()
   .withDefaultPrograms()
   .withLamports(1000000000000000n);
-svm.addProgramFromFile(
-  "hdrn4UEBJFjPEuUQnmRoA7YoXMeTcXVvMmME8sNFEkP",
-  PROGRAM_PATH
-);
+svm.addProgramFromFile(PROGRAM_ID, PROGRAM_PATH);
 console.log("PASS\n");
 
 // Test 3: Memory pressure — create + discard in a loop
