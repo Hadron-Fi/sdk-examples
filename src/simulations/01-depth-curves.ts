@@ -16,7 +16,6 @@
  */
 import { LiteSVM, FeatureSet } from "litesvm";
 import {
-  Connection,
   Keypair,
   PublicKey,
   Transaction,
@@ -26,17 +25,12 @@ import {
   TOKEN_PROGRAM_ID,
   MintLayout,
   getAssociatedTokenAddressSync,
-  createAssociatedTokenAccountInstruction,
-  createMintToInstruction,
 } from "@solana/spl-token";
 import {
   Hadron,
   toQ32,
-  fromQ32,
   Interpolation,
   Side,
-  getFeeConfigAddress,
-  decodeFeeConfig,
   decodeConfig,
   decodeMidpriceOracle,
   decodeCurveMeta,
@@ -128,21 +122,27 @@ function createMintInSvm(
   });
 }
 
-function createAtaIfNeeded(
+/** Inject a token account directly via setAccount — avoids SPL Token BPF execution. */
+function injectTokenAccount(
   svm: LiteSVM,
-  payer: Keypair,
+  mint: PublicKey,
   owner: PublicKey,
-  mint: PublicKey
+  amount: bigint = 0n
 ): PublicKey {
   const ata = getAssociatedTokenAddressSync(mint, owner, true);
   if (svm.getAccount(ata)) return ata;
-  const ix = createAssociatedTokenAccountInstruction(
-    payer.publicKey,
-    ata,
-    owner,
-    mint
-  );
-  sendTx(svm, payer, [ix]);
+  // SPL Token account layout: 165 bytes
+  const data = Buffer.alloc(165);
+  mint.toBuffer().copy(data, 0);         // mint (32)
+  owner.toBuffer().copy(data, 32);       // owner (32)
+  data.writeBigUInt64LE(amount, 64);     // amount (8)
+  data.writeUInt8(1, 108);               // state = Initialized
+  svm.setAccount(ata, {
+    lamports: 1_000_000_000n,
+    data,
+    owner: TOKEN_PROGRAM_ID,
+    executable: false,
+  });
   return ata;
 }
 
@@ -250,9 +250,9 @@ function simulateSwap(
       }),
     ]);
 
-    // 5. Create vault ATAs + deposit
-    createAtaIfNeeded(svm, payer, pool.addresses.config, mintX);
-    createAtaIfNeeded(svm, payer, pool.addresses.config, mintY);
+    // 5. Inject vault ATAs + deposit
+    injectTokenAccount(svm, mintX, pool.addresses.config, 0n);
+    injectTokenAccount(svm, mintY, pool.addresses.config, 0n);
 
     const baseValueUsd = config.totalValueUsd * pctBase;
     const quoteValueUsd = config.totalValueUsd * (1 - pctBase);
@@ -295,16 +295,69 @@ function simulateSwap(
 }
 
 // ============================================================================
-// Data collection
+// SVM factory — creates a fresh instance to avoid memory accumulation
+// ============================================================================
+
+interface SvmEnv {
+  svm: LiteSVM;
+  payer: Keypair;
+  mintX: PublicKey;
+  mintY: PublicKey;
+  payerAtaX: PublicKey;
+  payerAtaY: PublicKey;
+  feeRecipient: PublicKey;
+}
+
+function createSvmEnv(
+  feeConfigPda: PublicKey,
+  feeConfigData: { lamports: number; data: Buffer; },
+  feeRecipient: PublicKey,
+  config: PoolConfig,
+): SvmEnv {
+  const svm = LiteSVM.default()
+    .withFeatureSet(FeatureSet.allEnabled())
+    .withSigverify(false)
+    .withBuiltins()
+    .withSysvars()
+    .withDefaultPrograms()
+    .withLamports(1_000_000_000_000_000n);
+
+  svm.addProgramFromFile(PROGRAM_ID, PROGRAM_PATH);
+
+  const payer = Keypair.generate();
+  svm.airdrop(payer.publicKey, 100_000_000_000_000n);
+
+  const mintX = Keypair.generate();
+  const mintY = Keypair.generate();
+  createMintInSvm(svm, payer, mintX, config.decimalsX);
+  createMintInSvm(svm, payer, mintY, config.decimalsY);
+
+  svm.setAccount(feeConfigPda, {
+    lamports: BigInt(feeConfigData.lamports),
+    data: Buffer.from(feeConfigData.data),
+    owner: HADRON_PROGRAM_ID,
+    executable: false,
+  });
+  svm.airdrop(feeRecipient, 1_000_000_000n);
+
+  // Inject token accounts directly — bypasses SPL Token/ATA BPF execution
+  // which crashes on some x86 litesvm builds (std::bad_alloc in BPF JIT)
+  const largeBalance = 1_000_000_000_000_000n;
+  injectTokenAccount(svm, mintX.publicKey, feeRecipient, 0n);
+  injectTokenAccount(svm, mintY.publicKey, feeRecipient, 0n);
+  const payerAtaX = injectTokenAccount(svm, mintX.publicKey, payer.publicKey, largeBalance);
+  const payerAtaY = injectTokenAccount(svm, mintY.publicKey, payer.publicKey, largeBalance);
+
+  return { svm, payer, mintX: mintX.publicKey, mintY: mintY.publicKey, payerAtaX, payerAtaY, feeRecipient };
+}
+
+// ============================================================================
+// Data collection — fresh SVM per frame to keep memory bounded
 // ============================================================================
 
 function collectFrames(
-  svm: LiteSVM,
-  payer: Keypair,
-  mintX: PublicKey,
-  mintY: PublicKey,
-  payerAtaX: PublicKey,
-  payerAtaY: PublicKey,
+  feeConfigPda: PublicKey,
+  feeConfigData: { lamports: number; data: Buffer; },
   feeRecipient: PublicKey,
   config: PoolConfig,
   inventorySteps: number,
@@ -319,6 +372,9 @@ function collectFrames(
       `\x1b[33m  Frame ${step + 1}/${inventorySteps}\x1b[0m (${(pctBase * 100).toFixed(0)}% base) ... `
     );
 
+    // Fresh SVM per frame — previous frame's accounts are garbage collected
+    const env = createSvmEnv(feeConfigPda, feeConfigData, feeRecipient, config);
+
     const bid: { price: number; cumVolume: number }[] = [];
     const ask: { price: number; cumVolume: number }[] = [];
 
@@ -326,8 +382,8 @@ function collectFrames(
     for (let p = 1; p <= probePointsPerSide; p++) {
       const volume = (probeVolumeMax * p) / probePointsPerSide;
       const result = simulateSwap(
-        svm, payer, mintX, mintY, payerAtaX, payerAtaY,
-        feeRecipient, config, pctBase, "bid", volume
+        env.svm, env.payer, env.mintX, env.mintY, env.payerAtaX, env.payerAtaY,
+        env.feeRecipient, config, pctBase, "bid", volume
       );
       if (result && result.amountOut > 0n) {
         const inH = atomsToHuman(result.amountIn, config.decimalsX);
@@ -341,8 +397,8 @@ function collectFrames(
       const volumeBase = (probeVolumeMax * p) / probePointsPerSide;
       const volumeQuote = volumeBase * config.midprice;
       const result = simulateSwap(
-        svm, payer, mintX, mintY, payerAtaX, payerAtaY,
-        feeRecipient, config, pctBase, "ask", volumeQuote
+        env.svm, env.payer, env.mintX, env.mintY, env.payerAtaX, env.payerAtaY,
+        env.feeRecipient, config, pctBase, "ask", volumeQuote
       );
       if (result && result.amountOut > 0n) {
         const inH = atomsToHuman(result.amountIn, config.decimalsY);
@@ -361,12 +417,8 @@ function collectFrames(
 }
 
 function collectRiskData(
-  svm: LiteSVM,
-  payer: Keypair,
-  mintX: PublicKey,
-  mintY: PublicKey,
-  payerAtaX: PublicKey,
-  payerAtaY: PublicKey,
+  feeConfigPda: PublicKey,
+  feeConfigData: { lamports: number; data: Buffer; },
   feeRecipient: PublicKey,
   config: PoolConfig,
   pctBaseValues: number[]
@@ -375,24 +427,27 @@ function collectRiskData(
   const results: RiskPoint[] = [];
 
   for (const pctBase of pctBaseValues) {
+    // Fresh SVM per probe pair
+    const env = createSvmEnv(feeConfigPda, feeConfigData, feeRecipient, config);
+
     const bidResult = simulateSwap(
-      svm, payer, mintX, mintY, payerAtaX, payerAtaY,
-      feeRecipient, config, pctBase, "bid", testSizeBase
+      env.svm, env.payer, env.mintX, env.mintY, env.payerAtaX, env.payerAtaY,
+      env.feeRecipient, config, pctBase, "bid", testSizeBase
     );
     const askResult = simulateSwap(
-      svm, payer, mintX, mintY, payerAtaX, payerAtaY,
-      feeRecipient, config, pctBase, "ask", testSizeBase * config.midprice
+      env.svm, env.payer, env.mintX, env.mintY, env.payerAtaX, env.payerAtaY,
+      env.feeRecipient, config, pctBase, "ask", testSizeBase * config.midprice
     );
 
     const bidPrice =
       bidResult && bidResult.amountOut > 0n
         ? atomsToHuman(bidResult.amountOut, config.decimalsY) /
-          atomsToHuman(bidResult.amountIn, config.decimalsX)
+        atomsToHuman(bidResult.amountIn, config.decimalsX)
         : null;
     const askPrice =
       askResult && askResult.amountOut > 0n
         ? atomsToHuman(askResult.amountIn, config.decimalsY) /
-          atomsToHuman(askResult.amountOut, config.decimalsX)
+        atomsToHuman(askResult.amountOut, config.decimalsX)
         : null;
 
     results.push({ pctBase, bidPrice, askPrice });
@@ -406,121 +461,31 @@ function collectRiskData(
 
 (async () => {
   // ------------------------------------------------------------------
-  // Load pool from devnet
+  // Load pool + fee config from cache (auto-fetch via subprocess if missing)
   // ------------------------------------------------------------------
-  const configPath = path.resolve(__dirname, "../../output/pool-config.json");
-  if (!fs.existsSync(configPath)) {
-    throw new Error(
-      "output/pool-config.json not found. Run 'npm run init' first."
-    );
+  const cachePath = path.resolve(__dirname, "../../output/sim-cache.json");
+
+  if (!fs.existsSync(cachePath)) {
+    logHeader("Fetching pool data from devnet");
+    const fetchScript = path.resolve(__dirname, "fetch-sim-cache.ts");
+    const { execFileSync } = await import("child_process");
+    execFileSync("npx", ["tsx", fetchScript], {
+      stdio: "inherit",
+      env: process.env,
+    });
   }
 
-  const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-  const poolJson = Array.isArray(raw) ? raw[raw.length - 1] : raw;
-  const poolAddress = new PublicKey(poolJson.poolAddress);
+  if (!fs.existsSync(cachePath)) {
+    throw new Error("Failed to create sim-cache.json. Check devnet connection.");
+  }
 
-  const rpcUrl = process.env.RPC_URL || "https://api.devnet.solana.com";
-  const devnetConn = new Connection(rpcUrl, "confirmed");
-
-  logHeader("Loading pool from devnet");
-  logInfo("Pool:", poolAddress.toBase58());
-
-  const devnetPool = await Hadron.load(devnetConn, poolAddress);
-  const midprice = devnetPool.getMidprice();
-  const curves = devnetPool.getActiveCurves();
-
-  const config: PoolConfig = {
-    midprice,
-    decimalsX: 6,
-    decimalsY: 6,
-    totalValueUsd: midprice * 10_000,
-    priceCurves: {
-      bid: {
-        points: curves.priceBid.points.map((pt) => ({
-          volume: Number(pt.amountIn) / 1e6,
-          priceFactor: fromQ32(pt.priceFactorQ32),
-        })),
-      },
-      ask: {
-        points: curves.priceAsk.points.map((pt) => ({
-          volume: Number(pt.amountIn) / 1e6,
-          priceFactor: fromQ32(pt.priceFactorQ32),
-        })),
-      },
-    },
-    riskCurves: {
-      bid: {
-        points: curves.riskBid.points.map((pt) => ({
-          pctBase: fromQ32(pt.amountIn),
-          priceFactor: fromQ32(pt.priceFactorQ32),
-        })),
-      },
-      ask: {
-        points: curves.riskAsk.points.map((pt) => ({
-          pctBase: fromQ32(pt.amountIn),
-          priceFactor: fromQ32(pt.priceFactorQ32),
-        })),
-      },
-    },
-  };
-
-  logInfo("Midprice:", midprice.toFixed(4));
-  logInfo("Price Bid:", `${curves.priceBid.numPoints} points`);
-  logInfo("Price Ask:", `${curves.priceAsk.numPoints} points`);
-  logInfo("Risk Bid:", `${curves.riskBid.numPoints} points`);
-  logInfo("Risk Ask:", `${curves.riskAsk.numPoints} points`);
-
-  logHeader("Setting up LiteSVM");
-
-  // ---------------------------------------------------------------
-  // LiteSVM setup
-  // ---------------------------------------------------------------
-  const svm = LiteSVM.default()
-    .withFeatureSet(FeatureSet.allEnabled())
-    .withSigverify(false)
-    .withBuiltins()
-    .withSysvars()
-    .withDefaultPrograms()
-    .withLamports(1_000_000_000_000_000n);
-
-  svm.addProgramFromFile(PROGRAM_ID, PROGRAM_PATH);
-
-  const payer = Keypair.generate();
-  svm.airdrop(payer.publicKey, 100_000_000_000_000n);
-
-  // Create token mints
-  const mintX = Keypair.generate();
-  const mintY = Keypair.generate();
-  createMintInSvm(svm, payer, mintX, config.decimalsX);
-  createMintInSvm(svm, payer, mintY, config.decimalsY);
-
-  // Pull fee config from devnet and inject into LiteSVM
-  const [feeConfigPda] = getFeeConfigAddress();
-  const feeConfigAcct = await devnetConn.getAccountInfo(feeConfigPda);
-  if (!feeConfigAcct) throw new Error("Fee config not found on devnet");
-
-  svm.setAccount(feeConfigPda, {
-    lamports: BigInt(feeConfigAcct.lamports),
-    data: Buffer.from(feeConfigAcct.data),
-    owner: HADRON_PROGRAM_ID,
-    executable: false,
-  });
-
-  const feeConfig = decodeFeeConfig(feeConfigAcct.data);
-  const feeRecipient = feeConfig.feeRecipient;
-  svm.airdrop(feeRecipient, 1_000_000_000n);
-
-  // Create ATAs for fee recipient and payer
-  createAtaIfNeeded(svm, payer, feeRecipient, mintX.publicKey);
-  createAtaIfNeeded(svm, payer, feeRecipient, mintY.publicKey);
-  const payerAtaX = createAtaIfNeeded(svm, payer, payer.publicKey, mintX.publicKey);
-  const payerAtaY = createAtaIfNeeded(svm, payer, payer.publicKey, mintY.publicKey);
-
-  // Mint a large supply for the payer (covers all deposits + swaps)
-  sendTx(svm, payer, [
-    createMintToInstruction(mintX.publicKey, payerAtaX, payer.publicKey, BigInt("1000000000000000000")),
-    createMintToInstruction(mintY.publicKey, payerAtaY, payer.publicKey, BigInt("1000000000000000000")),
-  ]);
+  const cache = JSON.parse(fs.readFileSync(cachePath, "utf-8"));
+  const config: PoolConfig = cache.config;
+  const feeConfigPda = new PublicKey(cache.feeConfigPda);
+  const feeConfigData = { lamports: cache.feeConfigLamports, data: Buffer.from(cache.feeConfigData, "base64") };
+  const feeRecipient = new PublicKey(cache.feeRecipient);
+  logHeader("Loaded pool config");
+  logInfo("Midprice:", config.midprice.toFixed(4));
 
   // ---------------------------------------------------------------
   // Simulation parameters
@@ -536,15 +501,13 @@ function collectRiskData(
   );
 
   const frames = collectFrames(
-    svm, payer, mintX.publicKey, mintY.publicKey,
-    payerAtaX, payerAtaY, feeRecipient,
+    feeConfigPda, feeConfigData, feeRecipient,
     config, inventorySteps, probePointsPerSide, probeVolumeMax
   );
 
   logHeader("Collecting risk curve data");
   const riskData = collectRiskData(
-    svm, payer, mintX.publicKey, mintY.publicKey,
-    payerAtaX, payerAtaY, feeRecipient,
+    feeConfigPda, feeConfigData, feeRecipient,
     config, frames.map((f) => f.pctBase)
   );
 
