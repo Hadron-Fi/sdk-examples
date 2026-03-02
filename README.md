@@ -18,6 +18,25 @@ npm run depth-curves  Simulate & visualize depth across 21 inventory levels
 
 > To customize the pool, edit [`src/quickstart/01-initialize-pool.test.ts`](src/quickstart/01-initialize-pool.test.ts) and re-run `npm run init`.
 
+## Table of Contents
+
+- [Key Concepts](#key-concepts)
+- [Setup](#setup)
+- [Quick Start](#quick-start)
+- [Examples](#examples)
+- [Configuration](#configuration)
+- [Output Files](#output-files)
+
+## Key Concepts
+
+Hadron pools expose **5 levers** for controlling pricing:
+
+1. **Midprice** — Oracle price pushed by the authority via `updateMidprice`.
+2. **Base spread** — Symmetric bid/ask offset around midprice (e.g. 10 bps).
+3. **Price curves** — Price degradation as a function of trade size (depth).
+4. **Risk curves** — Price adjustment based on vault inventory imbalance.
+5. **Curve updates** — Real-time curve edits queued via `submitCurveUpdates`, applied atomically on the next swap.
+
 ## Setup
 
 ### 1. Install dependencies
@@ -79,68 +98,6 @@ npm run depth-curves        # → output/depth-curves.html
 npm run interp              # → output/interp-comparison.html
 ```
 
-## Default Pool Configuration
-
-The pool created by `npm run init` uses these defaults. To change them, edit [`src/quickstart/01-initialize-pool.test.ts`](src/quickstart/01-initialize-pool.test.ts).
-
-| Parameter | Default | Notes |
-|-----------|---------|-------|
-| Midprice | **$150.00** | Updated to $152.50 at the end |
-| Token X (base) | 6 decimals | New mint each run |
-| Token Y (quote) | 6 decimals | New mint each run |
-| Deposit | **5,000 X + 750,000 Y** | 50/50 value at $150 ($750k per side) |
-| Interpolation | Linear | All curves |
-
-### Price Curves (bid + ask, 11 points each)
-
-Both bid and ask use `priceFactor < 1.0` — this reduces swap output to create a spread. A kink at 750 X steepens the curve to protect liquidity at larger trade sizes.
-
-| Trade Size | priceFactor | Spread (bps) |
-|-----------|-------------|-------------|
-| 0 (midprice) | 1.0 | 0 |
-| 100 X | 0.99933 | -6.7 |
-| 250 X | 0.99867 | -13.3 |
-| 500 X | 0.99794 | -20.6 |
-| **750 X** | **0.99244** | **-75.6 (kink)** |
-| 1,000 X | 0.99206 | -79.4 |
-| 2,000 X | 0.99106 | -89.4 |
-| 4,000 X | 0.99000 | -100.0 |
-
-Ask curve uses the same factors with amountIn scaled by midprice (e.g. 500 X-equiv = 75,000 Y).
-
-### Risk Curves (bid + ask, 5 points each)
-
-Adjusts pricing based on vault inventory to attract rebalancing flow.
-
-| Inventory (% base) | Bid Factor | Ask Factor | Effect |
-|--------------------|-----------|-----------|--------|
-| 0% (empty) | 1.005 | 0.990 | Raise bid / lower ask to attract X inflow |
-| 50% (balanced) | 1.0 | 1.0 | No adjustment |
-| 100% (full) | 0.990 | 1.005 | Lower bid / raise ask to attract X outflow |
-
-## Output Files
-
-All examples write to `output/`:
-
-| File | Created by | Description |
-|------|-----------|-------------|
-| `pool-config.json` | `npm run init` | Array of pool configs (address, authority, timestamp). Tests 02-04 read the **latest entry**. |
-| `authority-{addr}.json` | `npm run init` | Authority keypair for each pool (needed for write operations) |
-| `depth-curves.html` | `npm run depth-curves` | Interactive depth chart with inventory slider |
-| `interp-comparison.html` | `npm run interp` | Side-by-side interpolation mode comparison |
-
-You can run `npm run init` multiple times — each run appends a new pool to `pool-config.json`. Subsequent commands (`read`, `write`, `spread`, `depth-curves`) always use the most recent pool.
-
-## Key Concepts
-
-Hadron pools expose **5 levers** for controlling pricing:
-
-1. **Midprice** — Oracle price pushed by the authority via `updateMidprice`.
-2. **Base spread** — Symmetric bid/ask offset around midprice (e.g. 10 bps).
-3. **Price curves** — Price degradation as a function of trade size (depth).
-4. **Risk curves** — Price adjustment based on vault inventory imbalance.
-5. **Curve updates** — Real-time curve edits queued via `submitCurveUpdates`, applied atomically on the next swap.
-
 ## Examples
 
 ### Quickstart — devnet pool lifecycle
@@ -176,3 +133,16 @@ All configuration is via `.env` (loaded automatically by dotenv):
 | `RPC_URL` | `https://api.devnet.solana.com` | Custom RPC endpoint |
 
 See [`.env.example`](.env.example) for a template.
+
+## Output Files
+
+All examples write to `output/`:
+
+| File | Created by | Description |
+|------|-----------|-------------|
+| `pool-config.json` | `npm run init` | Array of pool configs (address, authority, timestamp). Tests 02-04 read the **latest entry**. |
+| `authority-{addr}.json` | `npm run init` | Authority keypair for each pool (needed for write operations) |
+| `depth-curves.html` | `npm run depth-curves` | Interactive depth chart with inventory slider |
+| `interp-comparison.html` | `npm run interp` | Side-by-side interpolation mode comparison |
+
+You can run `npm run init` multiple times — each run appends a new pool to `pool-config.json`. Subsequent commands (`read`, `write`, `spread`, `depth-curves`) always use the most recent pool.
