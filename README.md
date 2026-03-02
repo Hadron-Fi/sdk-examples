@@ -45,24 +45,17 @@ RPC_URL=https://api.devnet.solana.com
 
 Set `RPC_URL` if you have a custom endpoint (Helius, Triton, etc).
 
-### 3. System prerequisites (Linux / EC2)
+### 3. System prerequisites
 
-The Rust examples depend on Solana crates which require a C toolchain and OpenSSL headers. On Ubuntu/Debian:
+**Linux (Ubuntu/Debian):**
 
 ```bash
 sudo apt update && sudo apt install build-essential pkg-config libssl-dev -y
-```
-
-Install Rust via [rustup](https://rustup.rs) (not `apt install rustc`):
-
-```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
 ```
 
-> **Disk space:** The Solana dependency tree is large. Ensure at least **5 GB free** for the build `target/` directory.
-
-On macOS these are typically already available via Xcode Command Line Tools.
+**macOS:** Install Xcode Command Line Tools (`xcode-select --install`) and Rust via [rustup](https://rustup.rs).
 
 ### 4. Install dependencies
 
