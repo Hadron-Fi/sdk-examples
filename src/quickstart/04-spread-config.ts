@@ -97,7 +97,7 @@ function logTriggers(label: string, triggers: SpreadTriggerInput[]) {
     authority = Keypair.fromSecretKey(Uint8Array.from(poolJson.authority));
   }
 
-  const h = new TestHarness();
+  const h = await TestHarness.create();
 
   // Ensure payer has enough SOL
   if (!h.isLocal) {

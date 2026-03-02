@@ -28,7 +28,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 (async () => {
-  const h = new TestHarness();
+  const h = await TestHarness.create();
 
   // ---------------------------------------------------------------
   // 1. Create two token mints (X = base token, Y = quote token)

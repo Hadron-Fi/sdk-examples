@@ -16,7 +16,7 @@ import "dotenv/config";
  *
  * See .env.example for all options.
  */
-import { LiteSVM, FeatureSet } from "litesvm";
+import type { LiteSVM } from "litesvm";
 import {
   Connection,
   Keypair,
@@ -117,21 +117,29 @@ export class TestHarness {
   private svm?: LiteSVM;
   private connection?: Connection;
 
-  constructor() {
+  private constructor(payer: Keypair, svm?: LiteSVM, connection?: Connection) {
+    this.payer = payer;
+    this.svm = svm;
+    this.connection = connection;
+  }
+
+  static async create(): Promise<TestHarness> {
     if (isDevnet()) {
       const walletPath = process.env.WALLET;
       if (!walletPath) {
         throw new Error("NETWORK=devnet requires WALLET=<path to keypair json>");
       }
       const raw = JSON.parse(fs.readFileSync(walletPath, "utf-8"));
-      this.payer = Keypair.fromSecretKey(Uint8Array.from(raw));
+      const payer = Keypair.fromSecretKey(Uint8Array.from(raw));
       const rpcUrl = process.env.RPC_URL || DEFAULT_RPC_URL;
-      this.connection = new Connection(rpcUrl, "confirmed");
+      const connection = new Connection(rpcUrl, "confirmed");
       logHeader("Devnet mode");
       logInfo("RPC:", rpcUrl);
-      logInfo("Payer:", this.payer.publicKey.toBase58());
+      logInfo("Payer:", payer.publicKey.toBase58());
+      return new TestHarness(payer, undefined, connection);
     } else {
-      this.svm = LiteSVM.default()
+      const { LiteSVM, FeatureSet } = await import("litesvm");
+      const svm = LiteSVM.default()
         .withFeatureSet(FeatureSet.allEnabled())
         .withSigverify(false)
         .withBuiltins()
@@ -139,10 +147,11 @@ export class TestHarness {
         .withDefaultPrograms()
         .withLamports(1_000_000_000_000_000n);
 
-      this.svm.addProgramFromFile(PROGRAM_ID, PROGRAM_PATH);
+      svm.addProgramFromFile(PROGRAM_ID, PROGRAM_PATH);
 
-      this.payer = Keypair.generate();
-      this.svm.airdrop(this.payer.publicKey, 100_000_000_000n);
+      const payer = Keypair.generate();
+      svm.airdrop(payer.publicKey, 100_000_000_000n);
+      return new TestHarness(payer, svm);
     }
   }
 

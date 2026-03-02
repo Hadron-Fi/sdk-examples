@@ -83,7 +83,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
     authority = Keypair.fromSecretKey(Uint8Array.from(poolJson.authority));
   }
 
-  const h = new TestHarness();
+  const h = await TestHarness.create();
 
   // Ensure payer has enough SOL for ATA creation rent
   const conn = h.getConnection();

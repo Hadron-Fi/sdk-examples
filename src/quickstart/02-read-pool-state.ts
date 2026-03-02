@@ -68,7 +68,7 @@ function formatCurve(label: string, curve: CurveSide, isRisk: boolean): void {
     poolAddress = new PublicKey(poolJson.poolAddress);
   }
 
-  const h = new TestHarness();
+  const h = await TestHarness.create();
 
   // ------------------------------------------------------------------
   // Load pool
