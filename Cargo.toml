@@ -24,8 +24,12 @@ path = "src-rs/quickstart/04-spread-config.rs"
 name = "delta-staleness"
 path = "src-rs/quickstart/05-delta-staleness.rs"
 
+[[bin]]
+name = "authority"
+path = "src-rs/quickstart/06-authority-transfer.rs"
+
 [dependencies]
-hadron-sdk = { version = "0.1", features = ["rpc"] }
+hadron-sdk = { version = "0.1.1", features = ["rpc"] }
 solana-sdk = "2.2"
 solana-client = "2.2"
 spl-token = { version = "8", features = ["no-entrypoint"] }

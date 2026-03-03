@@ -1413,9 +1413,9 @@ dependencies = [
 
 [[package]]
 name = "hadron-sdk"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ca4a07790af7ed4c8f5d58cec37cdf3c361176926522d233f28fbbd73a02114"
+checksum = "c2489d7c37e7a97178a2b908d290ec4738a081b4d8fc3a83ebb9acbd295f00a6"
 dependencies = [
  "solana-client",
  "solana-sdk",
