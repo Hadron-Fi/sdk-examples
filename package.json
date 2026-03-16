@@ -18,7 +18,7 @@
     "docker:interp": "docker run --rm --env-file .env -v \"$(pwd)/output:/app/output\" hadron-examples npm run interp"
   },
   "dependencies": {
-    "@hadron-fi/sdk": "^0.4.1",
+    "@hadron-fi/sdk": "^0.4.3",
     "@solana/spl-token": "^0.4.0",
     "@solana/web3.js": "^1.95.0",
     "dotenv": "^17.3.1"
