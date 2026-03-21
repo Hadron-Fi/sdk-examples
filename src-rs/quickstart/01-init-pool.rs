@@ -21,7 +21,7 @@ use hadron_sdk::{
     types::*,
     Hadron,
 };
-use solana_sdk::signature::Keypair;
+use solana_keypair::Keypair;
 use setup::*;
 
 fn main() {
@@ -114,7 +114,7 @@ fn main() {
             points: bid_price_points,
         },
     );
-    let sig = send_ix(&rpc, ix, &payer, &[&authority]);
+    let sig = send_ix(&rpc, ix.expect("Concavity check failed"), &payer, &[&authority]);
     log_tx("Price curve (bid — 11 points, kinked)", &sig);
 
     let ask_price_points: Vec<SetCurvePointInput> = vec![
@@ -141,7 +141,7 @@ fn main() {
             points: ask_price_points,
         },
     );
-    let sig = send_ix(&rpc, ix, &payer, &[&authority]);
+    let sig = send_ix(&rpc, ix.expect("Concavity check failed"), &payer, &[&authority]);
     log_tx("Price curve (ask — 11 points, kinked)", &sig);
 
     // ---------------------------------------------------------------
@@ -158,8 +158,8 @@ fn main() {
             x_mode: None,
             risk_mode: None,
             points: vec![
-                SetRiskCurvePointInput { pct_base_q32: to_q32(0.0),  price_factor_q32: to_q32(1.005),  interpolation: None, params: None },
-                SetRiskCurvePointInput { pct_base_q32: to_q32(0.25), price_factor_q32: to_q32(1.0025), interpolation: None, params: None },
+                SetRiskCurvePointInput { pct_base_q32: to_q32(0.0),  price_factor_q32: to_q32(1.0),    interpolation: None, params: None },
+                SetRiskCurvePointInput { pct_base_q32: to_q32(0.25), price_factor_q32: to_q32(1.0),    interpolation: None, params: None },
                 SetRiskCurvePointInput { pct_base_q32: to_q32(0.5),  price_factor_q32: to_q32(1.0),    interpolation: None, params: None },
                 SetRiskCurvePointInput { pct_base_q32: to_q32(0.75), price_factor_q32: to_q32(0.9975), interpolation: None, params: None },
                 SetRiskCurvePointInput { pct_base_q32: to_q32(1.0),  price_factor_q32: to_q32(0.990),  interpolation: None, params: None },
@@ -181,8 +181,8 @@ fn main() {
                 SetRiskCurvePointInput { pct_base_q32: to_q32(0.0),  price_factor_q32: to_q32(0.990),  interpolation: None, params: None },
                 SetRiskCurvePointInput { pct_base_q32: to_q32(0.25), price_factor_q32: to_q32(0.9975), interpolation: None, params: None },
                 SetRiskCurvePointInput { pct_base_q32: to_q32(0.5),  price_factor_q32: to_q32(1.0),    interpolation: None, params: None },
-                SetRiskCurvePointInput { pct_base_q32: to_q32(0.75), price_factor_q32: to_q32(1.0025), interpolation: None, params: None },
-                SetRiskCurvePointInput { pct_base_q32: to_q32(1.0),  price_factor_q32: to_q32(1.005),  interpolation: None, params: None },
+                SetRiskCurvePointInput { pct_base_q32: to_q32(0.75), price_factor_q32: to_q32(1.0),    interpolation: None, params: None },
+                SetRiskCurvePointInput { pct_base_q32: to_q32(1.0),  price_factor_q32: to_q32(1.0),    interpolation: None, params: None },
             ],
         },
     );

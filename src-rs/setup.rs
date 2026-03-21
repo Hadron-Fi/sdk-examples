@@ -2,16 +2,15 @@
 // Each binary includes this via `#[path = "setup.rs"] mod setup;`
 
 use serde::{Deserialize, Serialize};
-use solana_client::rpc_client::RpcClient;
+use solana_commitment_config::CommitmentConfig;
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_pubkey::Pubkey;
+use solana_rpc_client::rpc_client::RpcClient;
+use solana_signature::Signature;
 pub use solana_sdk::signer::Signer;
-use solana_sdk::{
-    commitment_config::CommitmentConfig,
-    pubkey::Pubkey,
-    signature::{Keypair, Signature},
-    system_instruction,
-    transaction::Transaction,
-    instruction::Instruction,
-};
+use solana_system_interface::instruction as system_instruction;
+use solana_transaction::Transaction;
 /// SPL Mint account size (82 bytes).
 const MINT_LEN: usize = 82;
 use spl_associated_token_account::{
@@ -67,7 +66,7 @@ pub fn load_wallet() -> Keypair {
     let data = fs::read_to_string(&wallet_path)
         .unwrap_or_else(|_| panic!("Wallet not found at {}.\nRun: solana-keygen new -o wallet.json  (in hadron-examples/)", wallet_path.display()));
     let bytes: Vec<u8> = serde_json::from_str(&data).expect("Failed to parse wallet keypair");
-    Keypair::from_bytes(&bytes).expect("Invalid keypair bytes")
+    Keypair::try_from(bytes.as_slice()).expect("Invalid keypair bytes")
 }
 
 /// Load the latest pool config entry. If POOL env is set, find that entry;
@@ -107,7 +106,7 @@ pub fn load_authority(entry: &PoolConfigEntry) -> Keypair {
     let data = fs::read_to_string(&key_path)
         .unwrap_or_else(|_| panic!("Authority key file not found: {}", key_path.display()));
     let bytes: Vec<u8> = serde_json::from_str(&data).expect("Failed to parse authority keypair");
-    Keypair::from_bytes(&bytes).expect("Invalid keypair bytes")
+    Keypair::try_from(bytes.as_slice()).expect("Invalid keypair bytes")
 }
 
 /// Parse a pool address string into a Pubkey.

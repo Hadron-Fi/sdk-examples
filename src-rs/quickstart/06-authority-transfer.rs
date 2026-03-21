@@ -19,7 +19,8 @@ use hadron_sdk::{
     types::*,
     Hadron,
 };
-use solana_sdk::signature::Keypair;
+use solana_keypair::Keypair;
+use solana_system_interface::instruction as system_instruction;
 use setup::*;
 
 fn main() {
@@ -40,7 +41,7 @@ fn main() {
     // ------------------------------------------------------------------
     let new_authority = Keypair::new();
     // Fund the new authority for tx fees
-    let transfer_ix = solana_sdk::system_instruction::transfer(
+    let transfer_ix = system_instruction::transfer(
         &payer.pubkey(),
         &new_authority.pubkey(),
         10_000_000, // 0.01 SOL
@@ -88,7 +89,7 @@ fn main() {
     //    the pool authority key.
     // ------------------------------------------------------------------
     let quoting_bot = Keypair::new();
-    let transfer_ix = solana_sdk::system_instruction::transfer(
+    let transfer_ix = system_instruction::transfer(
         &payer.pubkey(),
         &quoting_bot.pubkey(),
         10_000_000,
