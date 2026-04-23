@@ -27,7 +27,7 @@ use hadron_sdk::{
     types::*,
     Hadron,
 };
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use setup::*;
 
 fn log_triggers(label: &str, triggers: &[SpreadTriggerInput]) {
@@ -42,7 +42,7 @@ fn log_triggers(label: &str, triggers: &[SpreadTriggerInput]) {
 }
 
 fn read_spread_config(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     spread_config_pda: &Pubkey,
 ) -> Option<DecodedSpreadConfig> {
     let acct = rpc.get_account(spread_config_pda).ok()?;
@@ -151,8 +151,8 @@ fn main() {
         &authority.pubkey(),
         &UpdateSpreadConfigParams {
             triggers: vec![
-                SpreadTriggerInput { account: trigger1, spread_bps: 30 },
-                SpreadTriggerInput { account: trigger2, spread_bps: 50 },
+                SpreadTriggerInput { account: trigger1, spread_bps: 30, match_mode: 0 },
+                SpreadTriggerInput { account: trigger2, spread_bps: 50, match_mode: 0 },
             ],
         },
     );
@@ -191,6 +191,7 @@ fn main() {
             triggers: vec![SpreadTriggerInput {
                 account: trigger1,
                 spread_bps: 5,
+                match_mode: 0,
             }],
         },
     );

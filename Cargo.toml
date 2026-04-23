@@ -29,11 +29,18 @@ name = "authority"
 path = "src-rs/quickstart/06-authority-transfer.rs"
 
 [dependencies]
-hadron-sdk = { version = "0.2.3", features = ["rpc"] }
-solana-sdk = "2.2"
-solana-client = "2.2"
-spl-token = { version = "8", features = ["no-entrypoint"] }
-spl-associated-token-account = { version = "7", features = ["no-entrypoint"] }
+hadron-sdk = { version = "0.3", features = ["rpc"] }
+solana-sdk = "3"
+solana-rpc-client = "3"
+solana-commitment-config = "3"
+solana-keypair = "3"
+solana-system-interface = { version = "3", features = ["bincode"] }
+solana-pubkey = "3"
+solana-instruction = "3"
+solana-signature = "3"
+solana-transaction = "3"
+spl-token = { version = "9", features = ["no-entrypoint"] }
+spl-associated-token-account = { version = "8", features = ["no-entrypoint"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dotenv = "0.15"

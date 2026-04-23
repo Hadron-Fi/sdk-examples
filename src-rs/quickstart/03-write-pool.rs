@@ -84,12 +84,12 @@ fn main() {
     let ix = pool.update_base_spread(
         &authority.pubkey(),
         &UpdateBaseSpreadParams {
-            spread_factor_q32: spread_bps_to_q32(10),
+            spread_factor_q32: spread_bps_to_q32(50),
             sequence: None,
         },
     );
     let sig = send_ix(&rpc, ix, &payer, &[&authority]);
-    log_tx("Base spread → 10 bps", &sig);
+    log_tx("Base spread → 50 bps", &sig);
 
     // ------------------------------------------------------------------
     // 3. updateMidpriceAndBaseSpread — atomic update
@@ -99,12 +99,12 @@ fn main() {
         &authority.pubkey(),
         &UpdateMidpriceAndBaseSpreadParams {
             midprice_q32: to_q32(158.0),
-            spread_factor_q32: spread_bps_to_q32(5),
+            spread_factor_q32: spread_bps_to_q32(50),
             sequence: None,
         },
     );
     let sig = send_ix(&rpc, ix, &payer, &[&authority]);
-    log_tx("Midprice → 158, spread → 5 bps", &sig);
+    log_tx("Midprice → 158, spread → 50 bps", &sig);
 
     // ------------------------------------------------------------------
     // 4. submitCurveUpdates — queue edits to price curve points
@@ -132,7 +132,7 @@ fn main() {
             point_index: 0,
             interpolation: Interpolation::Linear,
             amount_in: bid_pts[0].amount_in,
-            price_factor_q32: to_q32(0.999),
+            price_factor_q32: to_q32(1.0),
             params: [0; 4],
         },
         CurveUpdateOp {
@@ -141,7 +141,7 @@ fn main() {
             point_index: 1,
             interpolation: Interpolation::Linear,
             amount_in: bid_pts[1].amount_in,
-            price_factor_q32: to_q32(0.9995),
+            price_factor_q32: to_q32(0.999),
             params: [0; 4],
         },
         CurveUpdateOp {
@@ -150,7 +150,7 @@ fn main() {
             point_index: 2,
             interpolation: Interpolation::Linear,
             amount_in: bid_pts[2].amount_in,
-            price_factor_q32: to_q32(0.999),
+            price_factor_q32: to_q32(0.998),
             params: [0; 4],
         },
     ];
